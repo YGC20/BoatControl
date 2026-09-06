@@ -1,0 +1,50 @@
+# ---- Build output (CMake / C++) ----
+build/
+out/
+cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+CMakeUserPresets.json
+*.dir/
+Makefile
+*.o
+*.obj
+*.exe
+*.dll
+*.lib
+*.pdb
+*.ilk
+*.exp
+*.a
+*.so
+*.dylib
+
+# ---- ONNX Runtime local install (fetched via ONNXRUNTIME_ROOT) ----
+onnxruntime/
+third_party/
+
+# ---- Python ----
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+env/
+*.egg-info/
+
+# ---- Model / media artifacts (usually large, fetched separately) ----
+*.onnx
+*.pt
+*.engine
+*.trt
+
+# ---- IDE / editor ----
+.vscode/
+.idea/
+*.swp
+.claude
+
+# ---- OS ----
+.DS_Store
+Thumbs.db
