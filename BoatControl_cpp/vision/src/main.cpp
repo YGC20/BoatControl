@@ -13,7 +13,7 @@ extern "C" Detector* create_detector();
 int main(int argc, char** argv)
 {
     std::string host = "127.0.0.1";
-    uint16_t    port = dsu::kDefaultBoatPort;
+    uint16_t    port = bcc::kDefaultBoatPort;
     int         camera_index = 0;
 
     for(int i=1; i<argc; ++i) {
@@ -41,12 +41,12 @@ int main(int argc, char** argv)
     while(cap.read(frame)) {
         auto results = det->infer(frame);
 
-        dsu::DetectionPacket packet{};
+        bcc::DetectionPacket packet{};
         packet.frame_width      = static_cast<std::uint16_t>(frame.cols);
         packet.frame_height     = static_cast<std::uint16_t>(frame.rows);
         packet.frame_id         = frame_id++;
         packet.num_detections   = static_cast<std::uint16_t>(
-            std::min<size_t>(results.size(), dsu::kMaxDetections)
+            std::min<size_t>(results.size(), bcc::kMaxDetections)
         );
 
         for(std::uint16_t i=0; i<packet.num_detections; ++i) {

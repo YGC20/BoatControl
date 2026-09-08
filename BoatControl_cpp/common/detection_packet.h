@@ -4,7 +4,7 @@
 #pragma once
 #include <cstdint>
 
-namespace dsu {
+namespace bcc {
 
 constexpr std::uint16_t kDetectionPacketMagic = 0xD5C1;
 constexpr int kMaxDetections = 8;
@@ -29,4 +29,4 @@ struct DetectionPacket {
 
 #pragma pack(pop)
 
-} // namespace dsu
+} // namespace bcc

@@ -48,3 +48,6 @@ env/
 # ---- OS ----
 .DS_Store
 Thumbs.db
+
+# ---- temp code ----
+BoatControl_cpp/boat/temp

@@ -36,7 +36,7 @@ UdpSender::~UdpSender(void)
     }
 }
 
-bool UdpSender::send(const dsu::DetectionPacket& packet)
+bool UdpSender::send(const bcc::DetectionPacket& packet)
 {
     if(this->sock_ == INVALID_SOCKET) { return false; }
 
