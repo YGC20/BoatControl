@@ -1,14 +1,20 @@
 #include <opencv2/opencv.hpp>
+#include <cstdint>
 #include <algorithm>
 #include <cstdio>
 #include <iostream>
 #include <memory>
+#include <string>
+#include <stdexcept>
 
 #include "detector.h"
 #include "udp_sender.h"
 #include "detection_packet.h"
 
+#define MAX_CAMERA 5
+
 extern "C" Detector* create_detector();
+int parse_int(const std::string& number, int minInt, int maxInt);
 
 int main(int argc, char** argv)
 {
@@ -18,7 +24,31 @@ int main(int argc, char** argv)
 
     for(int i=1; i<argc; ++i) {
         std::string arg = argv[i];
+
         if(arg == "--host" && i+1 < argc) { host = argv[++i]; }
+        else if(arg == "--port" && i+1 < argc) {
+            std::string value = argv[++i];
+            try { 
+                port = static_cast<uint16_t>(parse_int(value, 1, 65535));
+            } catch(const std::invalid_argument& e) {
+                std::cerr << "--port: " << e.what() << "\n"; return 1;
+            } catch(const std::out_of_range& e) {
+                std::cerr << "--port: " << e.what() << "\n"; return 1;
+            }
+        }
+        else if(arg == "--camera" && i+1 < argc) {
+            std::string value = argv[++i];
+            try {
+                camera_index = parse_int(value, 0, MAX_CAMERA);
+            } catch(const std::invalid_argument& e) {
+                std::cerr << "--camera: " << e.what() << "\n"; return 1;
+            } catch(const std::out_of_range& e) {
+                std::cerr << "--camera: " << e.what() << "\n"; return 1;
+            }
+        }
+        else {
+            std::cerr << "알 수 없는 인자: " << arg << "\n"; return 1;
+        }
     }
 
     cv::VideoCapture cap(camera_index);
@@ -28,7 +58,7 @@ int main(int argc, char** argv)
     }
 
     std::unique_ptr<Detector> det(create_detector());
-    if(!det->load("model/yolov8n.onnx")) {
+    if(!det->load("model/yolov10n.onnx")) {
         std::cerr << "모델 로드 실패\n";
         return 1;
     }
@@ -93,4 +123,18 @@ int main(int argc, char** argv)
     cap.release();
     cv::destroyAllWindows();
     return 0;
+}
+
+int parse_int(const std::string& str, int lo, int hi)
+{
+    std::size_t len = 0;
+    int num = std::stoi(str, &len);
+
+    if(len != str.size()) {
+        throw std::invalid_argument("invalid integer");
+    }
+    if(num < lo || num > hi) {
+        throw std::out_of_range("integer out of range");
+    }
+    return num;
 }

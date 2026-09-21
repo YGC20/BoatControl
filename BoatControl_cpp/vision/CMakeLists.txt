@@ -34,10 +34,17 @@ if(USE_ORT)
     target_include_directories(vision PRIVATE "${ONNXRUNTIME_ROOT}/include")
 
     add_library(onnxruntime SHARED IMPORTED)
-    set_target_properties(onnxruntime PROPERTIES 
-        IMPORTED_IMPLIB   "${ONNXRUNTIME_ROOT}/lib/onnxruntime.lib"
-        IMPORTED_LOCATION "${ONNXRUNTIME_ROOT}/lib/onnxruntime.dll"
-    )
+    if(WIN32)
+        set_target_properties(onnxruntime PROPERTIES 
+            IMPORTED_IMPLIB     "${ONNXRUNTIME_ROOT}/lib/onnxruntime.lib"
+            IMPORTED_LOCATION   "${ONNXRUNTIME_ROOT}/lib/onnxruntime.dll"
+        )
+    else()
+        set_target_properties(onnxruntime PROPERTIES 
+            IMPORTED_LOCATION   "${ONNXRUNTIME_ROOT}/lib/libonnxruntime.so"
+        )
+    endif()
+    
     target_link_libraries(vision PRIVATE onnxruntime)
 
     target_sources(vision PRIVATE src/detector_onnxruntime.cpp)
@@ -56,9 +63,11 @@ endif()
 
 # 실행에 필요한 OpenCV / ONNX Runtime 공유 라이브러리(.dll)를
 # 빌드할 때마다 vision.exe와 같은 폴더로 자동 복사
-add_custom_command(TARGET vision POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        $<TARGET_RUNTIME_DLLS:vision>
-        $<TARGET_FILE_DIR:vision>
-    COMMAND_EXPAND_LISTS
-)
+if(WIN32)
+    add_custom_command(TARGET vision POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            $<TARGET_RUNTIME_DLLS:vision>
+            $<TARGET_FILE_DIR:vision>
+        COMMAND_EXPAND_LISTS
+    )
+endif()
