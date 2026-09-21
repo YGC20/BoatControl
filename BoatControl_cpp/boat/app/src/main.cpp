@@ -52,7 +52,7 @@ int main(int argc, char** argv)
 
     while(!g_stop_requested) {
         double dist = distance->read_cm();
-        if(dist < 20.0) {
+        if(dist < 60.0) {
             motor->apply(Command::Stop);
             continue;
         }

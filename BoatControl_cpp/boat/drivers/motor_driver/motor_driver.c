@@ -27,32 +27,32 @@ static void motor_set_dir(int dir)
     switch (dir) {
     case MOTOR_STOP:
         gpio_set_value(GPIO_LEFT_FWD, 0);
-        gpio_set_value(GPIO_LEFT_BWD, 0);
         gpio_set_value(GPIO_RIGHT_FWD, 0);
+        gpio_set_value(GPIO_LEFT_BWD, 0);
         gpio_set_value(GPIO_RIGHT_BWD, 0);
         break;
     case MOTOR_FORWARD:
-        gpio_set_value(GPIO_LEFT_FWD, 1);
-        gpio_set_value(GPIO_LEFT_BWD, 0);
-        gpio_set_value(GPIO_RIGHT_FWD, 1);
+        gpio_set_value(GPIO_LEFT_BWD, 0);    
         gpio_set_value(GPIO_RIGHT_BWD, 0);
+        gpio_set_value(GPIO_LEFT_FWD, 1);
+        gpio_set_value(GPIO_RIGHT_FWD, 1);
         break;
     case MOTOR_BACKWARD:
         gpio_set_value(GPIO_LEFT_FWD, 0);
-        gpio_set_value(GPIO_LEFT_BWD, 1);
         gpio_set_value(GPIO_RIGHT_FWD, 0);
+        gpio_set_value(GPIO_LEFT_BWD, 1);
         gpio_set_value(GPIO_RIGHT_BWD, 1);
         break;
     case MOTOR_LEFT:
         gpio_set_value(GPIO_LEFT_FWD, 0);
+        gpio_set_value(GPIO_RIGHT_BWD, 0);
         gpio_set_value(GPIO_LEFT_BWD, 1);
         gpio_set_value(GPIO_RIGHT_FWD, 1);
-        gpio_set_value(GPIO_RIGHT_BWD, 0);
         break;
     case MOTOR_RIGHT:
-        gpio_set_value(GPIO_LEFT_FWD, 1);
-        gpio_set_value(GPIO_LEFT_BWD, 0);
+        gpio_set_value(GPIO_LEFT_BWD, 0);    
         gpio_set_value(GPIO_RIGHT_FWD, 0);
+        gpio_set_value(GPIO_LEFT_FWD, 1);
         gpio_set_value(GPIO_RIGHT_BWD, 1);
         break;
     }
@@ -66,6 +66,7 @@ static int motor_open(struct inode *inode, struct file *file)
 
 static int motor_release(struct inode *inode, struct file *file)
 {
+    motor_set_dir(MOTOR_STOP);
     printk(KERN_INFO "motor_driver: release\n");
     return 0;
 }
