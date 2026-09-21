@@ -34,10 +34,17 @@ if(USE_ORT)
     target_include_directories(vision PRIVATE "${ONNXRUNTIME_ROOT}/include")
 
     add_library(onnxruntime SHARED IMPORTED)
-    set_target_properties(onnxruntime PROPERTIES 
-        IMPORTED_IMPLIB   "${ONNXRUNTIME_ROOT}/lib/onnxruntime.lib"
-        IMPORTED_LOCATION "${ONNXRUNTIME_ROOT}/lib/onnxruntime.dll"
-    )
+    if(WIN32)
+        set_target_properties(onnxruntime PROPERTIES 
+            IMPORTED_IMPLIB     "${ONNXRUNTIME_ROOT}/lib/onnxruntime.lib"
+            IMPORTED_LOCATION   "${ONNXRUNTIME_ROOT}/lib/onnxruntime.dll"
+        )
+    else()
+        set_target_properties(onnxruntime PROPERTIES 
+            IMPORTED_LOCATION   "${ONNXRUNTIME_ROOT}/lib/libonnxruntime.so"
+        )
+    endif()
+    
     target_link_libraries(vision PRIVATE onnxruntime)
 
     target_sources(vision PRIVATE src/detector_onnxruntime.cpp)
