@@ -29,4 +29,6 @@ struct DetectionPacket {
 
 #pragma pack(pop)
 
+static_assert(sizeof(DetectionPacket) == 204, "Mismatched packet size");
+
 } // namespace bcc

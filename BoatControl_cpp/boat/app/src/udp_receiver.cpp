@@ -44,10 +44,11 @@ bool UdpReceiver::receive(bcc::DetectionPacket& out)
     }
 
     bcc::DetectionPacket packet{};
-    ssize_t n = recvfrom(sock_, &packet, sizeof(packet), 0, nullptr, nullptr);
+    ssize_t n = recvfrom(sock_, &packet, sizeof(packet), MSG_TRUNC, nullptr, nullptr);
     
     if(n != static_cast<ssize_t>(sizeof(packet))) { return false; }
     if(packet.magic != bcc::kDetectionPacketMagic) { return false; }
+    if(packet.num_detections > bcc::kMaxDetections) { return false; }
 
     out = packet;
     return true;
