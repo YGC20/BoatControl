@@ -6,7 +6,6 @@ CMakeFiles/
 CMakeCache.txt
 CMakeUserPresets.json
 *.dir/
-Makefile
 *.o
 *.obj
 *.exe

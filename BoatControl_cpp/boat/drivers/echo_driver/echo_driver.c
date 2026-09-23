@@ -7,6 +7,7 @@
 #include <linux/uaccess.h>
 #include <linux/wait.h>
 #include <linux/sched.h>
+#include <linux/spinlock.h>
 #include <linux/ktime.h>
 #include <linux/jiffies.h>
 
@@ -29,8 +30,11 @@ static s64 pulse_width_us;
 static bool measurement_ready;
 static DECLARE_WAIT_QUEUE_HEAD(wq);
 
+static spinlock_t echo_lock;
+
 static irqreturn_t echo_isr(int irq, void *dev_id)
 {
+    spin_lock(&echo_lock);
     int level = gpio_get_value(GPIO_ECHO);
     ktime_t now = ktime_get();
 
@@ -46,6 +50,7 @@ static irqreturn_t echo_isr(int irq, void *dev_id)
         }
     }
 
+    spin_unlock(&echo_lock);
     return IRQ_HANDLED;
 }
 
@@ -63,17 +68,24 @@ static int echo_release(struct inode *inode, struct file *file)
 
 static ssize_t echo_read(struct file *file, char __user *buf, size_t len, loff_t *offset)
 {
+    unsigned long flags;
+    s64 copy_pwu;
     long ret;
+
     if (len < sizeof(pulse_width_us)) { return -EINVAL; }
 
     measurement_ready = false;
     ret = wait_event_interruptible_timeout(wq, measurement_ready, msecs_to_jiffies(ECHO_TIMEOUT_MS));
     if (ret == 0) { return -ETIMEDOUT; }
     if (ret < 0) { return ret; }
+    
+    spin_lock_irqsave(&echo_lock, flags);
+    copy_pwu = pulse_width_us;
+    spin_unlock_irqrestore(&echo_lock, flags);
 
-    if (copy_to_user(buf, &pulse_width_us, sizeof(pulse_width_us))) { return -EFAULT; }
+    if (copy_to_user(buf, &copy_pwu, sizeof(copy_pwu))) { return -EFAULT; }
 
-    return sizeof(pulse_width_us);
+    return sizeof(copy_pwu);
 }
 
 static struct file_operations fops = {
@@ -85,6 +97,8 @@ static struct file_operations fops = {
 
 static int __init echo_driver_init(void)
 {
+    spin_lock_init(&echo_lock);
+
     int ret;
     ret = gpio_request(GPIO_ECHO, "echo_pin");
     if (ret) {

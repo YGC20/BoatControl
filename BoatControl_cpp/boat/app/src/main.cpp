@@ -16,6 +16,8 @@ Command returnDir(void);
 extern "C" MotorController* create_motor_controller();
 extern "C" DistanceSensor* create_distance_sensor();
 
+int parse_int(const std::string& str, int lo, int hi);
+
 namespace {
 
 volatile std::sig_atomic_t g_stop_requested = 0;
@@ -33,7 +35,16 @@ int main(int argc, char** argv)
 
     for(int i=1; i<argc; ++i) {
         std::string arg = argv[i];
-        if(arg == "--port" && i+1 < argc) { port = static_cast<uint16_t>(std::stoi(argv[++i])); }
+        if(arg == "--port" && i+1 < argc) {
+            std::string value = argv[++i];
+            try { 
+                port = static_cast<uint16_t>(parse_int(value, 1, 65535));
+            } catch(const std::invalid_argument& e) {
+                std::cerr << "--port: " << e.what() << "\n"; return 1;
+            } catch(const std::out_of_range& e) {
+                std::cerr << "--port: " << e.what() << "\n"; return 1;
+            }
+        }
     }
 
     std::signal(SIGINT, handle_stop_signal);
@@ -86,9 +97,23 @@ Command returnDir(void)
     std::mt19937 gen(rd());
     std::uniform_int_distribution<int> distrib(1,3);
     switch(distrib(gen)) {
-    case 1: return Command::Forward;
-    case 2: return Command::Left;
-    case 3: return Command::Right;
-    default: return Command::Forward;
+    case 1:     return Command::Forward;
+    case 2:     return Command::Left;
+    case 3:     return Command::Right;
+    default:    return Command::Forward;
     }
+}
+
+int parse_int(const std::string& str, int lo, int hi)
+{
+    std::size_t len = 0;
+    int num = std::stoi(str, &len);
+
+    if(len != str.size()) {
+        throw std::invalid_argument("invalid integer");
+    }
+    if(num < lo || num > hi) {
+        throw std::out_of_range("integer out of range");
+    }
+    return num;
 }
