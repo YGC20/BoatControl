@@ -2,6 +2,7 @@
 build/
 out/
 cmake-build-*/
+build-*/
 CMakeFiles/
 CMakeCache.txt
 CMakeUserPresets.json
@@ -17,6 +18,16 @@ CMakeUserPresets.json
 *.a
 *.so
 *.dylib
+
+# ---- Linux kernel module build output ----
+*.ko
+*.mod
+*.mod.c
+*.mod.o
+.*.cmd
+.tmp_versions/
+modules.order
+Module.symvers
 
 # ---- ONNX Runtime local install (fetched via ONNXRUNTIME_ROOT) ----
 onnxruntime/
@@ -43,6 +54,7 @@ env/
 .idea/
 *.swp
 .claude
+Claude outputs/
 
 # ---- OS ----
 .DS_Store

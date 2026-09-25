@@ -1,93 +1,44 @@
 #include "distance_sensor.h"
-#include <gpiod.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <cstdint>
 #include <stdexcept>
-#include <string>
 
 namespace {
-constexpr int kGpioChip = 0;
-constexpr unsigned kPinTrigger = 5;
-
 constexpr const char* kEchoDevicePath = "/dev/echo_driver";
-
 constexpr double kNoObstacleCm = 999.0;
 }
 
+/*
+ * trigger 핀 토글은 echo_driver 커널 모듈이 직접 담당한다 (write() 호출을
+ * "트리거 펄스 발생" 명령으로 취급). 예전엔 여기서 libgpiod로 /dev/gpiochip0을
+ * 직접 열어 trigger 핀을 켰었는데, libgpiod 2.x API가 요구하는 커널 GPIO
+ * uAPI v2가 PetaLinux 2017.4의 구형 커널(5.10 미만)에는 없어서 동작하지
+ * 않는다. motor_driver와 동일하게 커널 모듈이 GPIO를 전부 소유하는 구조로
+ * 맞췄다.
+ */
 class DistanceSensorDev : public DistanceSensor
 {
 public:
     DistanceSensorDev(void)
     {
-        const std::string chip_path = "/dev/gpiochip" + std::to_string(kGpioChip);
-        chip_ = gpiod_chip_open(chip_path.c_str());
-        if (chip_ == nullptr) { throw std::runtime_error("GPIO Chip 생성 실패"); }
-
-        gpiod_line_settings* settings = gpiod_line_settings_new();
-        if (settings == nullptr) {
-            gpiod_chip_close(chip_);
-            throw std::runtime_error("Line Settings 생성 실패");
-        }
-        gpiod_line_settings_set_direction(settings, GPIOD_LINE_DIRECTION_OUTPUT);
-        gpiod_line_settings_set_output_value(settings, GPIOD_LINE_VALUE_INACTIVE);
-
-        gpiod_line_config* line_cfg = gpiod_line_config_new();
-        if (line_cfg == nullptr) {
-            gpiod_line_settings_free(settings);
-            gpiod_chip_close(chip_);
-            throw std::runtime_error("Line Config 생성 실패");
-        }
-
-        const unsigned int offsets[] = { kPinTrigger };
-        if (gpiod_line_config_add_line_settings(line_cfg, offsets, 1, settings) != 0) {
-            gpiod_line_config_free(line_cfg);
-            gpiod_line_settings_free(settings);
-            gpiod_chip_close(chip_);
-            throw std::runtime_error("Line Config 설정 실패");
-        }
-
-        gpiod_request_config* req_cfg = gpiod_request_config_new();
-        if (req_cfg == nullptr) {
-            gpiod_line_config_free(line_cfg);
-            gpiod_line_settings_free(settings);
-            gpiod_chip_close(chip_);
-            throw std::runtime_error("Request Config 생성 실패");
-        }
-        gpiod_request_config_set_consumer(req_cfg, "boat_trigger");
-
-        request_ = gpiod_chip_request_lines(chip_, req_cfg, line_cfg);
-
-        // 요청이 끝나면 settings/config 객체는 더 필요 없음 (request_에 결과가 복사됨)
-        gpiod_request_config_free(req_cfg);
-        gpiod_line_config_free(line_cfg);
-        gpiod_line_settings_free(settings);
-
-        if (request_ == nullptr) {
-            gpiod_chip_close(chip_);
-            throw std::runtime_error("Trigger Line 요청 실패");
-        }
-
-        fd_echo_ = open(kEchoDevicePath, O_RDONLY);
-        if (fd_echo_ < 0) {
-            gpiod_line_request_release(request_);
-            gpiod_chip_close(chip_);
-            throw std::runtime_error("echo_driver open 실패");
-        }
+        fd_echo_ = open(kEchoDevicePath, O_RDWR);
+        if (fd_echo_ < 0) { throw std::runtime_error("echo_driver open 실패"); }
     }
 
     ~DistanceSensorDev(void)
     {
         close(fd_echo_);
-        gpiod_line_request_release(request_);
-        gpiod_chip_close(chip_);
     }
 
     double read_cm(void) override
     {
-        gpiod_line_request_set_value(request_, kPinTrigger, GPIOD_LINE_VALUE_ACTIVE);
-        usleep(10);
-        gpiod_line_request_set_value(request_, kPinTrigger, GPIOD_LINE_VALUE_INACTIVE);
+        // write 내용 자체는 의미 없음 - echo_driver 입장에서 write() 호출이
+        // 곧 trigger 펄스 발생 명령이다.
+        char dummy = 0;
+        if (write(fd_echo_, &dummy, sizeof(dummy)) < 0) {
+            return kNoObstacleCm;
+        }
 
         int64_t pulse_us;
         ssize_t n = read(fd_echo_, &pulse_us, sizeof(pulse_us));
@@ -99,8 +50,6 @@ public:
     }
 
 private:
-    gpiod_chip* chip_;
-    gpiod_line_request* request_;
     int fd_echo_;
 };
 
