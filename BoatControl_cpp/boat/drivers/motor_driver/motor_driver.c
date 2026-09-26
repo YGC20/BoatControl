@@ -4,19 +4,28 @@
 #include <linux/gpio.h>
 #include <linux/cdev.h>
 #include <linux/uaccess.h>
+#include <linux/moduleparam.h>
+
 #include "motor_ioctl.h"
 
-#define GPIO_BASE 905
+/*      핀 설정     */
 
-#define MIO_LEFT_FWD    0
-#define MIO_LEFT_BWD    1
-#define MIO_RIGHT_FWD   2
-#define MIO_RIGHT_BWD   3
+static int gpio_base = 905;
+module_param(gpio_base, int, 0644);
+MODULE_PARM_DESC(gpio_base, 
+    "PS GPIO base (zynq_gpio chip base, boot 후 /sys/kernel/debug/gpio로 확인)");
 
-#define GPIO_LEFT_FWD   (GPIO_BASE + MIO_LEFT_FWD)
-#define GPIO_LEFT_BWD   (GPIO_BASE + MIO_LEFT_BWD)
-#define GPIO_RIGHT_FWD  (GPIO_BASE + MIO_RIGHT_FWD)
-#define GPIO_RIGHT_BWD  (GPIO_BASE + MIO_RIGHT_BWD)
+#define MIO_LEFT_FWD    10  // JF2
+#define MIO_LEFT_BWD    11  // JF3
+#define MIO_RIGHT_FWD   12  // JF4
+#define MIO_RIGHT_BWD   13  // JF1
+
+#define GPIO_LEFT_FWD   (gpio_base + MIO_LEFT_FWD)
+#define GPIO_LEFT_BWD   (gpio_base + MIO_LEFT_BWD)
+#define GPIO_RIGHT_FWD  (gpio_base + MIO_RIGHT_FWD)
+#define GPIO_RIGHT_BWD  (gpio_base + MIO_RIGHT_BWD)
+
+/*******************/
 
 static dev_t dev_num;
 static struct cdev motor_cdev;

@@ -69,7 +69,13 @@ int main(int argc, char** argv)
         }
 
         bcc::DetectionPacket packet{};
-        if(!receiver.receive(packet) || packet.num_detections == 0) {
+        bool got_packet = receiver.receive(packet);
+        if(got_packet) {
+            std::cout << "[UDP] packet received: num_detections=" << packet.num_detections
+                       << " frame=" << packet.frame_width << "x" << packet.frame_height
+                       << " frame_id=" << packet.frame_id << std::endl;
+        }
+        if(!got_packet || packet.num_detections == 0) {
             motor->apply(returnDir());
             continue;
         }
